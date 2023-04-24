@@ -1,17 +1,10 @@
 #include <iostream>
 #include <Windows.h>
 
-
 #include "Dx11App.h"
-
-//
-//#pragma comment (lib, "d3d11.lib")
-//#pragma comment (lib, "d3dcompiler.lib")
 
 // disable SAL anotation warning
 #pragma warning(disable: 28251)
-
-// Global variables
 
 // Function prototypes
 LRESULT CALLBACK WndProc(HWND&, UINT, WPARAM, LPARAM);
