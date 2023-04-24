@@ -1,7 +1,7 @@
 #include <iostream>
 #include <Windows.h>
 
-#include "Dx11App.h"
+#include "Dx11App/Dx11App.h"
 
 // disable SAL anotation warning
 #pragma warning(disable: 28251)

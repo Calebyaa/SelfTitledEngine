@@ -1,12 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <FxCompile Include="PixelShader.hlsl" />
-    <FxCompile Include="VertexShader.hlsl" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Dx11App.cpp">
+    <ClCompile Include="Dx11App\Dx11App.cpp">
       <Filter>Dx11App</Filter>
     </ClCompile>
   </ItemGroup>
@@ -14,13 +10,24 @@
     <Filter Include="Dx11App">
       <UniqueIdentifier>{7288ba4c-b206-4fa5-991b-4bff5d25917f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Dx11App\Shaders">
+      <UniqueIdentifier>{dc41e883-c11c-4ac2-b164-2829715d2082}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Dx11App.h">
+    <ClInclude Include="Dx11App\Dx11App.h">
       <Filter>Dx11App</Filter>
     </ClInclude>
-    <ClInclude Include="types.h">
+    <ClInclude Include="Dx11App\types.h">
       <Filter>Dx11App</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Dx11App\Shaders\PixelShader.hlsl">
+      <Filter>Dx11App\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Dx11App\Shaders\VertexShader.hlsl">
+      <Filter>Dx11App\Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

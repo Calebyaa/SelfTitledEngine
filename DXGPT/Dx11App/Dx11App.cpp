@@ -114,7 +114,7 @@ HRESULT Dx11App::Init(HWND hWnd) {
 
     // Compile the vertex shader
     ID3DBlob* pVSBlob = nullptr;
-    hr = D3DCompileFromFile(L"VertexShader.hlsl", nullptr, nullptr, "main", "vs_4_0", 0, 0, &pVSBlob, nullptr);
+    hr = D3DCompileFromFile(L"Dx11App/Shaders/VertexShader.hlsl", nullptr, nullptr, "main", "vs_4_0", 0, 0, &pVSBlob, nullptr);
     if (FAILED(hr)) {
         MessageBox(nullptr, L"Error compiling vertex shader", L"Error", MB_OK);
         return hr;
@@ -146,7 +146,7 @@ HRESULT Dx11App::Init(HWND hWnd) {
 
     // Compile the pixel shader
     ID3DBlob* pPSBlob = nullptr;
-    hr = D3DCompileFromFile(L"PixelShader.hlsl", nullptr, nullptr, "main", "ps_4_0", 0, 0, &pPSBlob, nullptr);
+    hr = D3DCompileFromFile(L"Dx11App/Shaders/PixelShader.hlsl", nullptr, nullptr, "main", "ps_4_0", 0, 0, &pPSBlob, nullptr);
     if (FAILED(hr)) {
         MessageBox(nullptr, L"Error compiling pixel shader", L"Error", MB_OK);
         return hr;
