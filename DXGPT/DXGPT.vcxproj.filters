@@ -23,11 +23,11 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Dx11App\Shaders\PixelShader.hlsl">
+    <CustomBuild Include="Dx11App\Shaders\PixelShader.hlsl">
       <Filter>Dx11App\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Dx11App\Shaders\VertexShader.hlsl">
+    </CustomBuild>
+    <CustomBuild Include="Dx11App\Shaders\VertexShader.hlsl">
       <Filter>Dx11App\Shaders</Filter>
-    </FxCompile>
+    </CustomBuild>
   </ItemGroup>
 </Project>
