@@ -6,7 +6,8 @@
 #pragma comment (lib, "d3d11.lib")
 #pragma comment (lib, "d3dcompiler.lib")
 
-// in the future make a log file.
+#include <fstream>
+// change to messagebox error reporting
 #include <iostream>
 
 Dx11App::~Dx11App() {
@@ -112,18 +113,11 @@ HRESULT Dx11App::Init(HWND hWnd) {
     // Set the primitive topology
     _context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    // Compile the vertex shader
-    ID3DBlob* pVSBlob = nullptr;
-    hr = D3DCompileFromFile(L"Dx11App/Shaders/VertexShader.hlsl", nullptr, nullptr, "main", "vs_4_0", 0, 0, &pVSBlob, nullptr);
+    // Load and create the vertex shader
+    std::vector<char> vs = loadCompiledShader(L"VertexShader.hlsl.cso");
+    hr = _device->CreateVertexShader(vs.data(), vs.size(), nullptr, &_vertexShader);
     if (FAILED(hr)) {
-        MessageBox(nullptr, L"Error compiling vertex shader", L"Error", MB_OK);
-        return hr;
-    }
-
-    // Create the vertex shader
-    hr = _device->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_vertexShader);
-    if (FAILED(hr)) {
-        pVSBlob->Release();
+        //pVSBlob->Release();
         return hr;
     }
 
@@ -136,25 +130,17 @@ HRESULT Dx11App::Init(HWND hWnd) {
     UINT numElements = ARRAYSIZE(layout);
 
     // Create the input layout
-    hr = _device->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &_vertexLayout);
-    pVSBlob->Release();
+    hr = _device->CreateInputLayout(layout, numElements, vs.data(), vs.size(), &_vertexLayout);
+    //pVSBlob->Release();
     if (FAILED(hr))
         return hr;
 
     // Set the input layout
     _context->IASetInputLayout(_vertexLayout);
 
-    // Compile the pixel shader
-    ID3DBlob* pPSBlob = nullptr;
-    hr = D3DCompileFromFile(L"Dx11App/Shaders/PixelShader.hlsl", nullptr, nullptr, "main", "ps_4_0", 0, 0, &pPSBlob, nullptr);
-    if (FAILED(hr)) {
-        MessageBox(nullptr, L"Error compiling pixel shader", L"Error", MB_OK);
-        return hr;
-    }
-
-    // Create the pixel shader
-    hr = _device->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pixelShader);
-    pPSBlob->Release();
+    // Load and create the pixel shader
+    std::vector<char> ps = loadCompiledShader(L"PixelShader.hlsl.cso");
+    hr = _device->CreatePixelShader(ps.data(), ps.size(), nullptr, &_pixelShader);
     if (FAILED(hr))
         return hr;
 
@@ -230,4 +216,20 @@ std::wstring Dx11App::getErrorMessageFromHRESULT(HRESULT hr) {
     }
 
     return errorMessage;
+}
+
+std::vector<char> Dx11App::loadCompiledShader(const std::wstring& filePath) {
+    std::ifstream file(filePath, std::ios::binary | std::ios::ate);
+    if (!file.is_open()) {
+        throw std::runtime_error("Failed to open compiled shader file");
+    }
+
+    size_t fileSize = static_cast<size_t>(file.tellg());
+    std::vector<char> buffer(fileSize);
+
+    file.seekg(0, std::ios::beg);
+    file.read(buffer.data(), fileSize);
+    file.close();
+
+    return buffer;
 }

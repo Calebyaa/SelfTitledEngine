@@ -3,6 +3,7 @@
 #include <d3d11.h>
 
 #include <string>
+#include <vector>
 
 #include "types.h"
 
@@ -26,6 +27,7 @@ public:
 
 private:
     std::wstring getErrorMessageFromHRESULT(HRESULT hr);
+    std::vector<char> loadCompiledShader(const std::wstring& filePath);
 
 
 private:

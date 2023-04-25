@@ -37,8 +37,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow) {
         }
     }
 
-    //app.Cleanup();
-
     return (int)msg.wParam;
 }
 
