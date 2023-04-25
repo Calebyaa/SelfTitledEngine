@@ -8,7 +8,6 @@
 #pragma warning(disable: 28251)
 
 // Function prototypes
-LRESULT CALLBACK WndProc(HWND&, UINT, WPARAM, LPARAM);
 HRESULT InitWindow(HINSTANCE, int, HWND&);
 
 // Entry point
