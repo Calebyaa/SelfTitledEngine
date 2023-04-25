@@ -128,11 +128,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Dx11App\Dx11App.cpp" />
+    <ClCompile Include="helpers\helpers.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dx11App\Dx11App.h" />
     <ClInclude Include="Dx11App\types.h" />
+    <ClInclude Include="helpers\helpers.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="Dx11App\Shaders\PixelShader.hlsl">

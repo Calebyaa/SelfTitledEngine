@@ -2,6 +2,7 @@
 #include <Windows.h>
 
 #include "Dx11App/Dx11App.h"
+#include "helpers/helpers.h"
 
 // disable SAL anotation warning
 #pragma warning(disable: 28251)
@@ -10,20 +11,22 @@
 LRESULT CALLBACK WndProc(HWND&, UINT, WPARAM, LPARAM);
 HRESULT InitWindow(HINSTANCE, int, HWND&);
 
-void OpenConsoleWindow();
-
 // Entry point
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow) {
-    OpenConsoleWindow();
-
     HWND hWnd = nullptr;
+    HRESULT hr = S_OK;
 
-    if (FAILED(InitWindow(hInstance, nCmdShow, hWnd)))
-        return 0;
+    hr = InitWindow(hInstance, nCmdShow, hWnd);
+    if (FAILED(hr)) {
+        MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
+        return hr;
+    }
 
     Dx11App app;
-    if (FAILED(app.Init(hWnd))) {
-        return 0;
+    hr = app.Init(hWnd);
+    if (FAILED(hr)) {
+        MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
+        return hr;
     }
 
     // Main message loop
@@ -99,27 +102,4 @@ HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow, HWND& hWnd) {
     ShowWindow(hWnd, nCmdShow);
 
     return S_OK;
-}
-
-void OpenConsoleWindow() {
-    if (!AllocConsole()) {
-        MessageBox(nullptr, L"Failed to allocate console", L"Error", MB_OK | MB_ICONERROR);
-        return;
-    }
-
-    FILE* pCout;
-    freopen_s(&pCout, "CONOUT$", "w", stdout);
-    std::wcout.clear();
-
-    FILE* pCin;
-    freopen_s(&pCin, "CONIN$", "r", stdin);
-    std::wcin.clear();
-
-    SetConsoleTitle(L"Console");
-
-    // Optional: Adjust console window position
-    HWND consoleWnd = GetConsoleWindow();
-    RECT rect;
-    GetWindowRect(consoleWnd, &rect);
-    MoveWindow(consoleWnd, rect.left, rect.top, 800, 600, TRUE);
 }

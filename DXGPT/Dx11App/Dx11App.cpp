@@ -1,14 +1,14 @@
 #include "Dx11App.h"
 
+#include <fstream>
+#include <iostream>
 
 #include <d3dcompiler.h>
-
 #pragma comment (lib, "d3d11.lib")
 #pragma comment (lib, "d3dcompiler.lib")
 
-#include <fstream>
-// change to messagebox error reporting
-#include <iostream>
+#include "../helpers/helpers.h"
+
 
 Dx11App::~Dx11App() {
     Cleanup();
@@ -22,8 +22,7 @@ HRESULT Dx11App::Init(HWND hWnd) {
     UINT width = rc.right - rc.left;
     UINT height = rc.bottom - rc.top;
 
-    // Create a device, device context, and swap chain using DXGI factory
-    // ChatGPT lied. We are not using DXGI factory.
+    // Create a device, device context, and swap chain
     DXGI_SWAP_CHAIN_DESC sd;
     ZeroMemory(&sd, sizeof(sd));
     sd.BufferCount = 1;
@@ -57,20 +56,24 @@ HRESULT Dx11App::Init(HWND hWnd) {
     );
 
     if (FAILED(hr)) {
-        std::wcout << getErrorMessageFromHRESULT(hr) << std::endl;
+        MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
         return hr;
     }
 
     // Create a render target view
     ID3D11Texture2D* pBackBuffer = nullptr;
     hr = _swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
-    if (FAILED(hr))
+    if (FAILED(hr)) {
+        MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
         return hr;
+    }
 
     hr = _device->CreateRenderTargetView(pBackBuffer, nullptr, &_renderTarget);
     pBackBuffer->Release();
-    if (FAILED(hr))
+    if (FAILED(hr)) {
+        MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
         return hr;
+    }
 
     _context->OMSetRenderTargets(1, &_renderTarget, nullptr);
 
@@ -102,8 +105,10 @@ HRESULT Dx11App::Init(HWND hWnd) {
     ZeroMemory(&InitData, sizeof(InitData));
     InitData.pSysMem = vertices;
     hr = _device->CreateBuffer(&bd, &InitData, &_vertexBuffer);
-    if (FAILED(hr))
+    if (FAILED(hr)) {
+        MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
         return hr;
+    }
 
     // Set the vertex buffer
     UINT stride = sizeof(SimpleVertex);
@@ -117,7 +122,7 @@ HRESULT Dx11App::Init(HWND hWnd) {
     std::vector<char> vs = loadCompiledShader(L"VertexShader.hlsl.cso");
     hr = _device->CreateVertexShader(vs.data(), vs.size(), nullptr, &_vertexShader);
     if (FAILED(hr)) {
-        //pVSBlob->Release();
+        MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
         return hr;
     }
 
@@ -131,9 +136,10 @@ HRESULT Dx11App::Init(HWND hWnd) {
 
     // Create the input layout
     hr = _device->CreateInputLayout(layout, numElements, vs.data(), vs.size(), &_vertexLayout);
-    //pVSBlob->Release();
-    if (FAILED(hr))
+    if (FAILED(hr)) {
+        MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
         return hr;
+    }
 
     // Set the input layout
     _context->IASetInputLayout(_vertexLayout);
@@ -141,8 +147,10 @@ HRESULT Dx11App::Init(HWND hWnd) {
     // Load and create the pixel shader
     std::vector<char> ps = loadCompiledShader(L"PixelShader.hlsl.cso");
     hr = _device->CreatePixelShader(ps.data(), ps.size(), nullptr, &_pixelShader);
-    if (FAILED(hr))
+    if (FAILED(hr)) {
+        MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
         return hr;
+    }
 
     return S_OK;
 }
@@ -192,30 +200,6 @@ void Dx11App::Cleanup() {
 
     if (_device)
         _device->Release();
-}
-
-std::wstring Dx11App::getErrorMessageFromHRESULT(HRESULT hr) {
-    LPWSTR messageBuffer = nullptr;
-    DWORD bufferLength = FormatMessageW(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        nullptr,
-        hr,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPWSTR)&messageBuffer,
-        0,
-        nullptr
-    );
-
-    std::wstring errorMessage;
-
-    if (bufferLength) {
-        errorMessage.assign(messageBuffer, bufferLength);
-        LocalFree(messageBuffer);
-    } else {
-        errorMessage = L"Unknown error";
-    }
-
-    return errorMessage;
 }
 
 std::vector<char> Dx11App::loadCompiledShader(const std::wstring& filePath) {

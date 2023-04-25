@@ -5,6 +5,9 @@
     <ClCompile Include="Dx11App\Dx11App.cpp">
       <Filter>Dx11App</Filter>
     </ClCompile>
+    <ClCompile Include="helpers\helpers.cpp">
+      <Filter>helpers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Dx11App">
@@ -13,6 +16,9 @@
     <Filter Include="Dx11App\Shaders">
       <UniqueIdentifier>{dc41e883-c11c-4ac2-b164-2829715d2082}</UniqueIdentifier>
     </Filter>
+    <Filter Include="helpers">
+      <UniqueIdentifier>{9696ea7d-497d-48d2-bd18-539ed4b72fb5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dx11App\Dx11App.h">
@@ -20,6 +26,9 @@
     </ClInclude>
     <ClInclude Include="Dx11App\types.h">
       <Filter>Dx11App</Filter>
+    </ClInclude>
+    <ClInclude Include="helpers\helpers.h">
+      <Filter>helpers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

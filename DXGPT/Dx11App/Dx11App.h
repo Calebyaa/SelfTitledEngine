@@ -26,7 +26,6 @@ public:
     void Cleanup();
 
 private:
-    std::wstring getErrorMessageFromHRESULT(HRESULT hr);
     std::vector<char> loadCompiledShader(const std::wstring& filePath);
 
 
