@@ -92,8 +92,7 @@ HRESULT Dx11App::Init(HWND hWnd) {
     _context->RSSetViewports(1, &vp);
 
     // Create the vertex buffer
-    std::vector<Mesh> meshes;
-    loadModel("Assets/teapot.obj", meshes);
+    loadModel("Assets/teapot.obj");
     //Vertex vertices[] =
     //{
     //    { DirectX::XMFLOAT3(0.0f, 0.5f, 0.5f), DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
@@ -101,27 +100,50 @@ HRESULT Dx11App::Init(HWND hWnd) {
     //    { DirectX::XMFLOAT3(-0.5f, -0.5f, 0.5f), DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) }
     //};
 
-    auto mesh = meshes[0];
+    auto mesh = _meshes[0];
 
-    D3D11_BUFFER_DESC bd;
-    ZeroMemory(&bd, sizeof(bd));
-    bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(Vertex) * 3;
-    bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    bd.CPUAccessFlags = 0;
-    D3D11_SUBRESOURCE_DATA InitData;
-    ZeroMemory(&InitData, sizeof(InitData));
-    InitData.pSysMem = mesh.vertices.data();
-    hr = _device->CreateBuffer(&bd, &InitData, &_vertexBuffer);
+    // vertex buffer
+    D3D11_BUFFER_DESC vertBufferDesc;
+    ZeroMemory(&vertBufferDesc, sizeof(vertBufferDesc));
+    vertBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+    vertBufferDesc.ByteWidth = sizeof(Vertex) * mesh.numberOfVertices;
+    vertBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    vertBufferDesc.CPUAccessFlags = 0;
+    D3D11_SUBRESOURCE_DATA vertData;
+    ZeroMemory(&vertData, sizeof(vertData));
+    vertData.pSysMem = mesh.vertices.data();
+    hr = _device->CreateBuffer(&vertBufferDesc, &vertData, &_vertexBuffer);
     if (FAILED(hr)) {
         MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
         return hr;
     }
-
-    // Set the vertex buffer
     UINT stride = sizeof(Vertex);
     UINT offset = 0;
     _context->IASetVertexBuffers(0, 1, &_vertexBuffer, &stride, &offset);
+
+    //index buffer
+    D3D11_BUFFER_DESC indexBufferDesc;
+    ZeroMemory(&indexBufferDesc, sizeof(indexBufferDesc));
+
+    indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+    indexBufferDesc.ByteWidth = sizeof(uint32_t) * mesh.numberOfIndices; // numIndices should be the total number of indices in your .obj file.
+    indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+    indexBufferDesc.CPUAccessFlags = 0;
+    indexBufferDesc.MiscFlags = 0;
+
+    D3D11_SUBRESOURCE_DATA indexData;
+    indexData.pSysMem = mesh.indices.data();; // indices should be an array containing the indices from your .obj file.
+    indexData.SysMemPitch = 0;
+    indexData.SysMemSlicePitch = 0;
+
+    hr = _device->CreateBuffer(&indexBufferDesc, &indexData, &_indexBuffer); // 'device' should be your ID3D11Device pointer, and 'indexBuffer' should be your ID3D11Buffer pointer.
+    if (FAILED(hr)) {
+        MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
+        return hr;
+    }
+    _context->IASetIndexBuffer(_indexBuffer, DXGI_FORMAT_R32_UINT, 0); // 'deviceContext' should be your ID3D11DeviceContext pointer.
+
+
 
     // Set the primitive topology
     _context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -160,6 +182,30 @@ HRESULT Dx11App::Init(HWND hWnd) {
         return hr;
     }
 
+    // Create a rasterizer state description that culls front-facing triangles
+    D3D11_RASTERIZER_DESC rasterDesc = {};
+    rasterDesc.FillMode = D3D11_FILL_SOLID;
+    rasterDesc.CullMode = D3D11_CULL_FRONT;
+    rasterDesc.FrontCounterClockwise = false;
+    rasterDesc.DepthBias = 0;
+    rasterDesc.DepthBiasClamp = 0.0f;
+    rasterDesc.SlopeScaledDepthBias = 0.0f;
+    rasterDesc.DepthClipEnable = true;
+    rasterDesc.ScissorEnable = false;
+    rasterDesc.MultisampleEnable = false;
+    rasterDesc.AntialiasedLineEnable = false;
+
+    // Create a rasterizer state object from the description
+    ID3D11RasterizerState* rasterState = nullptr;
+    hr = _device->CreateRasterizerState(&rasterDesc, &rasterState);
+    if (FAILED(hr)) {
+        MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
+        return hr;
+    }
+
+    // Set the rasterizer state object for the graphics pipeline
+    _context->RSSetState(rasterState);
+
     return S_OK;
 }
 
@@ -174,7 +220,7 @@ void Dx11App::Render() {
     _context->PSSetShader(_pixelShader, nullptr, 0);
 
     // Draw the triangle
-    _context->Draw(3, 0);
+    _context->DrawIndexed(_meshes[0].numberOfIndices, 0, 0);
 
     // Present the back buffer to the screen
     _swapChain->Present(1, 0);
@@ -226,7 +272,7 @@ std::vector<char> Dx11App::loadCompiledShader(const std::wstring& filePath) {
     return buffer;
 }
 
-bool Dx11App::loadModel(const std::string& filePath, std::vector<Mesh>& meshes) {
+bool Dx11App::loadModel(const std::string& filePath) {
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(filePath, aiProcess_Triangulate | aiProcess_JoinIdenticalVertices);
 
@@ -241,15 +287,15 @@ bool Dx11App::loadModel(const std::string& filePath, std::vector<Mesh>& meshes) 
         return false;
     }
 
-    for (unsigned int i = 0; i < scene->mNumMeshes; i++) {
-        aiMesh* ai_mesh = scene->mMeshes[i];
+    for (size_t meshIndex = 0; meshIndex < scene->mNumMeshes; meshIndex++) {
+        aiMesh* aiMesh = scene->mMeshes[meshIndex];
         Mesh mesh;
 
-        for (unsigned int j = 0; j < ai_mesh->mNumVertices; ++j) {
+        for (size_t vertexIndex = 0; vertexIndex < aiMesh->mNumVertices; ++vertexIndex) {
             Vertex vertex;
-            vertex.Pos.x = ai_mesh->mVertices[j].x;
-            vertex.Pos.y = ai_mesh->mVertices[j].y;
-            vertex.Pos.z = ai_mesh->mVertices[j].z - 1.0f;
+            vertex.Pos.x = aiMesh->mVertices[vertexIndex].x;
+            vertex.Pos.y = aiMesh->mVertices[vertexIndex].y;
+            vertex.Pos.z = aiMesh->mVertices[vertexIndex].z;
             vertex.Color.x = 0.949f;
             vertex.Color.y = 0.353f;
             vertex.Color.z = 0.114f;
@@ -257,7 +303,51 @@ bool Dx11App::loadModel(const std::string& filePath, std::vector<Mesh>& meshes) 
             mesh.vertices.push_back(vertex);
         }
 
-        meshes.push_back(mesh);
+        // normalize them shits
+
+        DirectX::XMFLOAT3 minCoord(mesh.vertices[0].Pos.x, mesh.vertices[0].Pos.y, mesh.vertices[0].Pos.z);
+        DirectX::XMFLOAT3 maxCoord(mesh.vertices[0].Pos.x, mesh.vertices[0].Pos.y, mesh.vertices[0].Pos.z);
+
+        for (const auto& vertex : mesh.vertices) {
+            minCoord.x = std::min(minCoord.x, vertex.Pos.x);
+            minCoord.y = std::min(minCoord.y, vertex.Pos.y);
+            minCoord.z = std::min(minCoord.z, vertex.Pos.z);
+
+            maxCoord.x = std::max(maxCoord.x, vertex.Pos.x);
+            maxCoord.y = std::max(maxCoord.y, vertex.Pos.y);
+            maxCoord.z = std::max(maxCoord.z, vertex.Pos.z);
+        }
+
+        for (size_t triangleIndex = 0; triangleIndex < aiMesh->mNumFaces; triangleIndex++) {
+            // TODO: error check this, in case there aren't three indices
+            mesh.indices.push_back(DirectX::XMUINT3{
+                aiMesh->mFaces[triangleIndex].mIndices[0],
+                aiMesh->mFaces[triangleIndex].mIndices[1],
+                aiMesh->mFaces[triangleIndex].mIndices[2]
+            });
+
+        }
+
+        DirectX::XMFLOAT3 center(
+            (minCoord.x + maxCoord.x) / 2.0f,
+            (minCoord.y + maxCoord.y) / 2.0f,
+            (minCoord.z + maxCoord.z) / 2.0f
+        );
+
+        float maxRange = std::max({ maxCoord.x - minCoord.x, maxCoord.y - minCoord.y, maxCoord.z - minCoord.z });
+        float scaleFactor = 2.0f / maxRange;
+
+        for (auto& vertex : mesh.vertices) {
+            vertex.Pos.x = (vertex.Pos.x - center.x) * scaleFactor;
+            vertex.Pos.y = (vertex.Pos.y - center.y) * scaleFactor;
+            vertex.Pos.z = (vertex.Pos.z - center.z) * scaleFactor;
+        }
+
+
+        mesh.numberOfVertices = mesh.vertices.size();
+        mesh.numberOfIndices = mesh.indices.size() * 3;
+
+        _meshes.push_back(mesh);
     }
 
     return true;

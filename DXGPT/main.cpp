@@ -10,8 +10,33 @@
 // Function prototypes
 HRESULT InitWindow(HINSTANCE, int, HWND&);
 
+void OpenConsoleWindow() {
+    if (!AllocConsole()) {
+        MessageBox(nullptr, L"Failed to allocate console", L"Error", MB_OK | MB_ICONERROR);
+        return;
+    }
+
+    FILE* pCout;
+    freopen_s(&pCout, "CONOUT$", "w", stdout);
+    std::wcout.clear();
+
+    FILE* pCin;
+    freopen_s(&pCin, "CONIN$", "r", stdin);
+    std::wcin.clear();
+
+    SetConsoleTitle(L"Console");
+
+    // Optional: Adjust console window position
+    HWND consoleWnd = GetConsoleWindow();
+    RECT rect;
+    GetWindowRect(consoleWnd, &rect);
+    MoveWindow(consoleWnd, rect.left, rect.top, 800, 600, TRUE);
+}
+
 // Entry point
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow) {
+    OpenConsoleWindow();
+
     HWND hWnd = nullptr;
     HRESULT hr = S_OK;
 
@@ -87,7 +112,7 @@ HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow, HWND& hWnd) {
         CW_USEDEFAULT,
         CW_USEDEFAULT,
         800,
-        600,
+        800,
         nullptr,
         nullptr,
         hInstance,

@@ -1,5 +1,7 @@
 #pragma once
 
+#define NOMINMAX
+
 #include <d3d11.h>
 
 #include <string>
@@ -28,10 +30,12 @@ public:
 private:
     // update this to return bool
     std::vector<char> loadCompiledShader(const std::wstring& filePath);
-    bool loadModel(const std::string& filePath, std::vector<Mesh>& meshes);
+    bool loadModel(const std::string& filePath);
 
 
 private:
+    std::vector<Mesh> _meshes;
+
     ID3D11Device* _device;
     ID3D11DeviceContext* _context;
     IDXGISwapChain* _swapChain;
