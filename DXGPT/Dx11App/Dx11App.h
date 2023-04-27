@@ -26,7 +26,9 @@ public:
     void Cleanup();
 
 private:
+    // update this to return bool
     std::vector<char> loadCompiledShader(const std::wstring& filePath);
+    bool loadModel(const std::string& filePath, std::vector<Mesh>& meshes);
 
 
 private:

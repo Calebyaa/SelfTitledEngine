@@ -3,6 +3,10 @@
 #include <fstream>
 #include <iostream>
 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 #include <d3dcompiler.h>
 #pragma comment (lib, "d3d11.lib")
 #pragma comment (lib, "d3dcompiler.lib")
@@ -88,22 +92,26 @@ HRESULT Dx11App::Init(HWND hWnd) {
     _context->RSSetViewports(1, &vp);
 
     // Create the vertex buffer
-    SimpleVertex vertices[] =
-    {
-        { DirectX::XMFLOAT3(0.0f, 0.5f, 0.5f), DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
-        { DirectX::XMFLOAT3(0.5f, -0.5f, 0.5f), DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
-        { DirectX::XMFLOAT3(-0.5f, -0.5f, 0.5f), DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) }
-    };
+    std::vector<Mesh> meshes;
+    loadModel("Assets/teapot.obj", meshes);
+    //Vertex vertices[] =
+    //{
+    //    { DirectX::XMFLOAT3(0.0f, 0.5f, 0.5f), DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
+    //    { DirectX::XMFLOAT3(0.5f, -0.5f, 0.5f), DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
+    //    { DirectX::XMFLOAT3(-0.5f, -0.5f, 0.5f), DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) }
+    //};
+
+    auto mesh = meshes[0];
 
     D3D11_BUFFER_DESC bd;
     ZeroMemory(&bd, sizeof(bd));
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(SimpleVertex) * 3;
+    bd.ByteWidth = sizeof(Vertex) * 3;
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bd.CPUAccessFlags = 0;
     D3D11_SUBRESOURCE_DATA InitData;
     ZeroMemory(&InitData, sizeof(InitData));
-    InitData.pSysMem = vertices;
+    InitData.pSysMem = mesh.vertices.data();
     hr = _device->CreateBuffer(&bd, &InitData, &_vertexBuffer);
     if (FAILED(hr)) {
         MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
@@ -111,7 +119,7 @@ HRESULT Dx11App::Init(HWND hWnd) {
     }
 
     // Set the vertex buffer
-    UINT stride = sizeof(SimpleVertex);
+    UINT stride = sizeof(Vertex);
     UINT offset = 0;
     _context->IASetVertexBuffers(0, 1, &_vertexBuffer, &stride, &offset);
 
@@ -216,4 +224,41 @@ std::vector<char> Dx11App::loadCompiledShader(const std::wstring& filePath) {
     file.close();
 
     return buffer;
+}
+
+bool Dx11App::loadModel(const std::string& filePath, std::vector<Mesh>& meshes) {
+    Assimp::Importer importer;
+    const aiScene* scene = importer.ReadFile(filePath, aiProcess_Triangulate | aiProcess_JoinIdenticalVertices);
+
+    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+        
+        // maybe write a convert method for this, if it comes up a lot
+        std::string msg(importer.GetErrorString());
+        std::vector<wchar_t> wideMessage(msg.begin(), msg.end());
+        wideMessage.push_back(L'\0');
+
+        MessageBox(nullptr, wideMessage.data(), L"Assimp Error", MB_OK | MB_ICONERROR);
+        return false;
+    }
+
+    for (unsigned int i = 0; i < scene->mNumMeshes; i++) {
+        aiMesh* ai_mesh = scene->mMeshes[i];
+        Mesh mesh;
+
+        for (unsigned int j = 0; j < ai_mesh->mNumVertices; ++j) {
+            Vertex vertex;
+            vertex.Pos.x = ai_mesh->mVertices[j].x;
+            vertex.Pos.y = ai_mesh->mVertices[j].y;
+            vertex.Pos.z = ai_mesh->mVertices[j].z - 1.0f;
+            vertex.Color.x = 0.949f;
+            vertex.Color.y = 0.353f;
+            vertex.Color.z = 0.114f;
+            vertex.Color.w = 1.0f;
+            mesh.vertices.push_back(vertex);
+        }
+
+        meshes.push_back(mesh);
+    }
+
+    return true;
 }

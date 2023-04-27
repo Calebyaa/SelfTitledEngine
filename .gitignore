@@ -363,3 +363,14 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+
+# explicit includes
+!Externals/lib/x64/
+!Externals/lib/x64/Debug/
+!Externals/lib/x64/Release/
+!Externals/lib/Debug/
+!Externals/lib/Release/
+!Externals/lib/
+
+!Assets/
