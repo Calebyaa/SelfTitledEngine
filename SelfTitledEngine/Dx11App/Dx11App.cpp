@@ -186,7 +186,7 @@ HRESULT Dx11App::Init(HWND hWnd) {
         return hr;
 
     // Camera position
-    DirectX::XMFLOAT3 cameraPosition(0.0f, 0.0f, 3.0f);
+    DirectX::XMFLOAT3 cameraPosition(0.0f, 7.5f, -10.0f);
     DirectX::XMFLOAT3 cameraTarget(0.0f, 0.0f, 0.0f);
     DirectX::XMFLOAT3 cameraUp(0.0f, 1.0f, 0.0f);
 
@@ -199,7 +199,7 @@ HRESULT Dx11App::Init(HWND hWnd) {
     float farZ = 1000.0f;
 
     // Field of view angle (in radians)
-    float fovAngleY = 3.0f; // 120 degrees
+    float fovAngleY = DirectX::XM_PI / 4.0f; // 45 degrees
 
     DirectX::XMMATRIX viewMatrix = DirectX::XMMatrixLookAtLH(position, target, up);
     DirectX::XMMATRIX projectionMatrix = DirectX::XMMatrixPerspectiveFovLH(fovAngleY, aspectRatio, nearZ, farZ);
