@@ -23,13 +23,15 @@ PS_INPUT main(VS_INPUT input) {
                                 0, 0, 0, 1);
 
     // Transform the vertex position by the view and projection matrices.
-    float4 position = float4(input.Pos, 1.0f);   
+    float3 position = input.Pos;
+    //float4 position = (input.Pos, 1.0f);
     
-    position = mul(position, projectionMatrix);
-    position = mul(position, viewMatrix);
-    position = mul(position, modelMatrix);
-    
-    output.Pos = position;
+    position = mul(position, modelMatrix * viewMatrix * projectionMatrix); // *viewMatrix* modelMatrix);
+    //position = mul(position, viewMatrix);
+    //position = mul(position, modelMatrix);
+
+    output.Pos = float4(position.x, position.y, position.z, 1.0f);
+    //output.Pos = position;
 
     output.Color = input.Color;
 

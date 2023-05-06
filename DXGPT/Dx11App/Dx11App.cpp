@@ -131,15 +131,12 @@ HRESULT Dx11App::Init(HWND hWnd) {
     indexData.SysMemPitch = 0;
     indexData.SysMemSlicePitch = 0;
 
-   
     hr = _device->CreateBuffer(&indexBufferDesc, &indexData, &_indexBuffer); // 'device' should be your ID3D11Device pointer, and 'indexBuffer' should be your ID3D11Buffer pointer.
 
     if (FAILED(hr)) 
         return hr;
 
     _context->IASetIndexBuffer(_indexBuffer, DXGI_FORMAT_R32_UINT, 0); // 'deviceContext' should be your ID3D11DeviceContext pointer.
-
-
 
     // Set the primitive topology
     _context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -189,7 +186,7 @@ HRESULT Dx11App::Init(HWND hWnd) {
         return hr;
 
     // Camera position
-    DirectX::XMFLOAT3 cameraPosition(0.0f, 0.0f, -5.0f);
+    DirectX::XMFLOAT3 cameraPosition(0.0f, 0.0f, 3.0f);
     DirectX::XMFLOAT3 cameraTarget(0.0f, 0.0f, 0.0f);
     DirectX::XMFLOAT3 cameraUp(0.0f, 1.0f, 0.0f);
 
@@ -199,15 +196,15 @@ HRESULT Dx11App::Init(HWND hWnd) {
 
     float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
     float nearZ = 0.1f;
-    float farZ = 100.0f;
+    float farZ = 1000.0f;
 
     // Field of view angle (in radians)
-    float fovAngleY = DirectX::XM_PI / 4.0f; // 45 degrees
+    float fovAngleY = 3.0f; // 120 degrees
 
     DirectX::XMMATRIX viewMatrix = DirectX::XMMatrixLookAtLH(position, target, up);
     DirectX::XMMATRIX projectionMatrix = DirectX::XMMatrixPerspectiveFovLH(fovAngleY, aspectRatio, nearZ, farZ);
 
-    Camera camera{ viewMatrix, projectionMatrix };
+    Camera camera{ DirectX::XMMatrixTranspose(viewMatrix), DirectX::XMMatrixTranspose(projectionMatrix) };
 
     D3D11_MAPPED_SUBRESOURCE mappedResource;
     hr = _context->Map(_cameraBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
@@ -220,7 +217,6 @@ HRESULT Dx11App::Init(HWND hWnd) {
     _context->Unmap(_cameraBuffer, 0);
 
     _context->VSSetConstantBuffers(0, 1, &_cameraBuffer);
-
 
     // Create a rasterizer state description that culls front-facing triangles
     D3D11_RASTERIZER_DESC rasterDesc = {};
@@ -244,8 +240,6 @@ HRESULT Dx11App::Init(HWND hWnd) {
 
     // Set the rasterizer state object for the graphics pipeline
     _context->RSSetState(rasterState);
-
-    
 
     return S_OK;
 }
@@ -338,6 +332,7 @@ bool Dx11App::loadModel(const std::string& filePath) {
         aiMesh* aiMesh = scene->mMeshes[meshIndex];
         Mesh mesh;
 
+        // get the vertices
         for (size_t vertexIndex = 0; vertexIndex < aiMesh->mNumVertices; ++vertexIndex) {
             Vertex vertex;
             vertex.Pos.x = aiMesh->mVertices[vertexIndex].x;
@@ -350,21 +345,7 @@ bool Dx11App::loadModel(const std::string& filePath) {
             mesh.vertices.push_back(vertex);
         }
 
-        // normalize them shits
-
-        DirectX::XMFLOAT3 minCoord(mesh.vertices[0].Pos.x, mesh.vertices[0].Pos.y, mesh.vertices[0].Pos.z);
-        DirectX::XMFLOAT3 maxCoord(mesh.vertices[0].Pos.x, mesh.vertices[0].Pos.y, mesh.vertices[0].Pos.z);
-
-        for (const auto& vertex : mesh.vertices) {
-            minCoord.x = std::min(minCoord.x, vertex.Pos.x);
-            minCoord.y = std::min(minCoord.y, vertex.Pos.y);
-            minCoord.z = std::min(minCoord.z, vertex.Pos.z);
-
-            maxCoord.x = std::max(maxCoord.x, vertex.Pos.x);
-            maxCoord.y = std::max(maxCoord.y, vertex.Pos.y);
-            maxCoord.z = std::max(maxCoord.z, vertex.Pos.z);
-        }
-
+        // get the indices
         for (size_t triangleIndex = 0; triangleIndex < aiMesh->mNumFaces; triangleIndex++) {
             // TODO: error check this, in case there aren't three indices
             mesh.indices.push_back(DirectX::XMUINT3{
@@ -372,24 +353,43 @@ bool Dx11App::loadModel(const std::string& filePath) {
                 aiMesh->mFaces[triangleIndex].mIndices[1],
                 aiMesh->mFaces[triangleIndex].mIndices[2]
             });
-
         }
 
-        DirectX::XMFLOAT3 center(
-            (minCoord.x + maxCoord.x) / 2.0f,
-            (minCoord.y + maxCoord.y) / 2.0f,
-            (minCoord.z + maxCoord.z) / 2.0f
-        );
+        // normalize the verts
+        //DirectX::XMFLOAT3 minCoord(mesh.vertices[0].Pos.x, mesh.vertices[0].Pos.y, mesh.vertices[0].Pos.z);
+        //DirectX::XMFLOAT3 maxCoord(mesh.vertices[0].Pos.x, mesh.vertices[0].Pos.y, mesh.vertices[0].Pos.z);
 
-        float maxRange = std::max({ maxCoord.x - minCoord.x, maxCoord.y - minCoord.y, maxCoord.z - minCoord.z });
-        float scaleFactor = 2.0f / maxRange;
+        //for (const auto& vertex : mesh.vertices) {
+        //    minCoord.x = std::min(minCoord.x, vertex.Pos.x);
+        //    minCoord.y = std::min(minCoord.y, vertex.Pos.y);
+        //    minCoord.z = std::min(minCoord.z, vertex.Pos.z);
 
-        for (auto& vertex : mesh.vertices) {
-            vertex.Pos.x = (vertex.Pos.x - center.x) * scaleFactor;
-            vertex.Pos.y = (vertex.Pos.y - center.y) * scaleFactor;
-            vertex.Pos.z = ((vertex.Pos.z - center.z) * scaleFactor);
-        }
+        //    maxCoord.x = std::max(maxCoord.x, vertex.Pos.x);
+        //    maxCoord.y = std::max(maxCoord.y, vertex.Pos.y);
+        //    maxCoord.z = std::max(maxCoord.z, vertex.Pos.z);
+        //}
 
+        //std::cout << "max: { " << maxCoord.x << ", " << maxCoord.y << ", " << maxCoord.z << "}" << std::endl;
+        //std::cout << "min: { " << minCoord.x << ", " << minCoord.y << ", " << minCoord.z << "}" << std::endl;
+
+        //DirectX::XMFLOAT3 center(
+        //    (minCoord.x + maxCoord.x) / 2.0f,
+        //    (minCoord.y + maxCoord.y) / 2.0f,
+        //    (minCoord.z + maxCoord.z) / 2.0f
+        //);
+
+        //float maxRange = std::max({ maxCoord.x - minCoord.x, maxCoord.y - minCoord.y, maxCoord.z - minCoord.z });
+        //float scaleFactor = 2.0f / maxRange;
+
+        //std::cout << "max range: " << maxRange << std::endl;
+        //std::cout << "scale factor: " << scaleFactor << std::endl;
+
+
+        //for (auto& vertex : mesh.vertices) {
+        //    vertex.Pos.x = (vertex.Pos.x - center.x) * scaleFactor;
+        //    vertex.Pos.y = (vertex.Pos.y - center.y) * scaleFactor;
+        //    vertex.Pos.z = ((vertex.Pos.z - center.z) * scaleFactor);
+        //}
 
         mesh.numberOfVertices = mesh.vertices.size();
         mesh.numberOfIndices = mesh.indices.size() * 3;
