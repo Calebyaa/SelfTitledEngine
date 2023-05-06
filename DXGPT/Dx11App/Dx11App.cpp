@@ -8,6 +8,7 @@
 #include <assimp/postprocess.h>
 
 #include <d3dcompiler.h>
+#include <dxgidebug.h>
 #pragma comment (lib, "d3d11.lib")
 #pragma comment (lib, "d3dcompiler.lib")
 
@@ -43,12 +44,17 @@ HRESULT Dx11App::Init(HWND hWnd) {
     D3D_FEATURE_LEVEL FeatureLevels = D3D_FEATURE_LEVEL_11_0;
     // TODO: Maybe actually store the returned feature level, if you ever use an array of feature levels
     D3D_FEATURE_LEVEL FeatureLevel;
+    UINT createDeviceFlags = 0;
+
+#if defined(_DEBUG)
+    createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
 
     hr = D3D11CreateDeviceAndSwapChain(
         nullptr,
         D3D_DRIVER_TYPE_HARDWARE,
         nullptr,
-        0,
+        createDeviceFlags,
         &FeatureLevels,
         1,
         D3D11_SDK_VERSION,
@@ -59,25 +65,21 @@ HRESULT Dx11App::Init(HWND hWnd) {
         &_context
     );
 
-    if (FAILED(hr)) {
-        MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
+    if (FAILED(hr)) 
         return hr;
-    }
 
     // Create a render target view
     ID3D11Texture2D* pBackBuffer = nullptr;
     hr = _swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
-    if (FAILED(hr)) {
-        MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
+
+    if (FAILED(hr)) 
         return hr;
-    }
 
     hr = _device->CreateRenderTargetView(pBackBuffer, nullptr, &_renderTarget);
     pBackBuffer->Release();
-    if (FAILED(hr)) {
-        MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
+
+    if (FAILED(hr))
         return hr;
-    }
 
     _context->OMSetRenderTargets(1, &_renderTarget, nullptr);
 
@@ -93,13 +95,6 @@ HRESULT Dx11App::Init(HWND hWnd) {
 
     // Create the vertex buffer
     loadModel("Assets/teapot.obj");
-    //Vertex vertices[] =
-    //{
-    //    { DirectX::XMFLOAT3(0.0f, 0.5f, 0.5f), DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
-    //    { DirectX::XMFLOAT3(0.5f, -0.5f, 0.5f), DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
-    //    { DirectX::XMFLOAT3(-0.5f, -0.5f, 0.5f), DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) }
-    //};
-
     auto mesh = _meshes[0];
 
     // vertex buffer
@@ -113,10 +108,10 @@ HRESULT Dx11App::Init(HWND hWnd) {
     ZeroMemory(&vertData, sizeof(vertData));
     vertData.pSysMem = mesh.vertices.data();
     hr = _device->CreateBuffer(&vertBufferDesc, &vertData, &_vertexBuffer);
-    if (FAILED(hr)) {
-        MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
+
+    if (FAILED(hr))
         return hr;
-    }
+
     UINT stride = sizeof(Vertex);
     UINT offset = 0;
     _context->IASetVertexBuffers(0, 1, &_vertexBuffer, &stride, &offset);
@@ -136,11 +131,12 @@ HRESULT Dx11App::Init(HWND hWnd) {
     indexData.SysMemPitch = 0;
     indexData.SysMemSlicePitch = 0;
 
+   
     hr = _device->CreateBuffer(&indexBufferDesc, &indexData, &_indexBuffer); // 'device' should be your ID3D11Device pointer, and 'indexBuffer' should be your ID3D11Buffer pointer.
-    if (FAILED(hr)) {
-        MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
+
+    if (FAILED(hr)) 
         return hr;
-    }
+
     _context->IASetIndexBuffer(_indexBuffer, DXGI_FORMAT_R32_UINT, 0); // 'deviceContext' should be your ID3D11DeviceContext pointer.
 
 
@@ -151,10 +147,9 @@ HRESULT Dx11App::Init(HWND hWnd) {
     // Load and create the vertex shader
     std::vector<char> vs = loadCompiledShader(L"VertexShader.hlsl.cso");
     hr = _device->CreateVertexShader(vs.data(), vs.size(), nullptr, &_vertexShader);
-    if (FAILED(hr)) {
-        MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
+
+    if (FAILED(hr)) 
         return hr;
-    }
 
     // Define the input layout
     D3D11_INPUT_ELEMENT_DESC layout[] =
@@ -166,10 +161,9 @@ HRESULT Dx11App::Init(HWND hWnd) {
 
     // Create the input layout
     hr = _device->CreateInputLayout(layout, numElements, vs.data(), vs.size(), &_vertexLayout);
-    if (FAILED(hr)) {
-        MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
+
+    if (FAILED(hr))
         return hr;
-    }
 
     // Set the input layout
     _context->IASetInputLayout(_vertexLayout);
@@ -177,10 +171,56 @@ HRESULT Dx11App::Init(HWND hWnd) {
     // Load and create the pixel shader
     std::vector<char> ps = loadCompiledShader(L"PixelShader.hlsl.cso");
     hr = _device->CreatePixelShader(ps.data(), ps.size(), nullptr, &_pixelShader);
-    if (FAILED(hr)) {
-        MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
+
+    if (FAILED(hr))
         return hr;
-    }
+
+    // Set up the camera
+    D3D11_BUFFER_DESC cameraBufferDesc;
+    cameraBufferDesc.ByteWidth = sizeof(Camera);
+    cameraBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+    cameraBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    cameraBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    cameraBufferDesc.MiscFlags = 0;
+
+    hr = _device->CreateBuffer(&cameraBufferDesc, nullptr, &_cameraBuffer);
+
+    if (FAILED(hr))
+        return hr;
+
+    // Camera position
+    DirectX::XMFLOAT3 cameraPosition(0.0f, 0.0f, -5.0f);
+    DirectX::XMFLOAT3 cameraTarget(0.0f, 0.0f, 0.0f);
+    DirectX::XMFLOAT3 cameraUp(0.0f, 1.0f, 0.0f);
+
+    DirectX::XMVECTOR position = XMLoadFloat3(&cameraPosition);
+    DirectX::XMVECTOR target = XMLoadFloat3(&cameraTarget);
+    DirectX::XMVECTOR up = XMLoadFloat3(&cameraUp);
+
+    float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+    float nearZ = 0.1f;
+    float farZ = 100.0f;
+
+    // Field of view angle (in radians)
+    float fovAngleY = DirectX::XM_PI / 4.0f; // 45 degrees
+
+    DirectX::XMMATRIX viewMatrix = DirectX::XMMatrixLookAtLH(position, target, up);
+    DirectX::XMMATRIX projectionMatrix = DirectX::XMMatrixPerspectiveFovLH(fovAngleY, aspectRatio, nearZ, farZ);
+
+    Camera camera{ viewMatrix, projectionMatrix };
+
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    hr = _context->Map(_cameraBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+
+    if (FAILED(hr))
+        return hr;
+
+    Camera* pBuffer = reinterpret_cast<Camera*>(mappedResource.pData);
+    *pBuffer = camera;
+    _context->Unmap(_cameraBuffer, 0);
+
+    _context->VSSetConstantBuffers(0, 1, &_cameraBuffer);
+
 
     // Create a rasterizer state description that culls front-facing triangles
     D3D11_RASTERIZER_DESC rasterDesc = {};
@@ -198,13 +238,14 @@ HRESULT Dx11App::Init(HWND hWnd) {
     // Create a rasterizer state object from the description
     ID3D11RasterizerState* rasterState = nullptr;
     hr = _device->CreateRasterizerState(&rasterDesc, &rasterState);
-    if (FAILED(hr)) {
-        MessageBox(nullptr, helpers::GetErrorMessageFromHRESULT(hr).c_str(), L"Error", MB_OK | MB_ICONERROR);
+
+    if (FAILED(hr))
         return hr;
-    }
 
     // Set the rasterizer state object for the graphics pipeline
     _context->RSSetState(rasterState);
+
+    
 
     return S_OK;
 }
@@ -223,7 +264,7 @@ void Dx11App::Render() {
     _context->DrawIndexed(_meshes[0].numberOfIndices, 0, 0);
 
     // Present the back buffer to the screen
-    _swapChain->Present(1, 0);
+    _swapChain->Present(0, 0);
 }
 
 void Dx11App::Cleanup() {
@@ -233,6 +274,12 @@ void Dx11App::Cleanup() {
 
     if (_vertexBuffer)
         _vertexBuffer->Release();
+
+    if (_indexBuffer)
+        _indexBuffer->Release();
+
+    if (_cameraBuffer)
+        _cameraBuffer->Release();
 
     if (_vertexLayout)
         _vertexLayout->Release();
@@ -340,7 +387,7 @@ bool Dx11App::loadModel(const std::string& filePath) {
         for (auto& vertex : mesh.vertices) {
             vertex.Pos.x = (vertex.Pos.x - center.x) * scaleFactor;
             vertex.Pos.y = (vertex.Pos.y - center.y) * scaleFactor;
-            vertex.Pos.z = (vertex.Pos.z - center.z) * scaleFactor;
+            vertex.Pos.z = ((vertex.Pos.z - center.z) * scaleFactor);
         }
 
 

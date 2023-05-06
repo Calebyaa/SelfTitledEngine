@@ -20,6 +20,7 @@ public:
         _pixelShader(nullptr),
         _vertexBuffer(nullptr),
         _indexBuffer(nullptr),
+        _cameraBuffer(nullptr),
         _vertexLayout(nullptr) {}
 
     ~Dx11App();
@@ -45,5 +46,6 @@ private:
     ID3D11PixelShader* _pixelShader;
     ID3D11Buffer* _vertexBuffer;
     ID3D11Buffer* _indexBuffer;
+    ID3D11Buffer* _cameraBuffer;
     ID3D11InputLayout* _vertexLayout;
 };

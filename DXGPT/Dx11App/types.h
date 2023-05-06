@@ -4,13 +4,15 @@
 
 #include <DirectXMath.h>
 
-struct Vertex
-{
+struct Camera {
+    DirectX::XMMATRIX viewMatrix;
+    DirectX::XMMATRIX projectionMatrix;
+};
+
+struct Vertex {
     DirectX::XMFLOAT3 Pos;
     DirectX::XMFLOAT4 Color;
 };
-
-
 
 struct Mesh {
     std::vector<Vertex> vertices;

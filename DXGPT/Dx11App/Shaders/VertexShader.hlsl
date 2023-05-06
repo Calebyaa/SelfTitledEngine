@@ -1,19 +1,37 @@
-struct VS_INPUT
-{
+cbuffer CameraBuffer : register(b0) {
+    matrix viewMatrix;
+    matrix projectionMatrix;
+};
+
+
+struct VS_INPUT {
     float3 Pos : POSITION;
     float4 Color : COLOR;
 };
 
-struct PS_INPUT
-{
+struct PS_INPUT {
     float4 Pos : SV_POSITION;
     float4 Color : COLOR;
 };
 
-PS_INPUT main(VS_INPUT input)
-{
+PS_INPUT main(VS_INPUT input) {
     PS_INPUT output;
-    output.Pos = float4(input.Pos, 1.0f);
+
+    matrix modelMatrix = matrix(1, 0, 0, 0,
+                                0, 1, 0, 0,
+                                0, 0, 1, 0,
+                                0, 0, 0, 1);
+
+    // Transform the vertex position by the view and projection matrices.
+    float4 position = float4(input.Pos, 1.0f);   
+    
+    position = mul(position, projectionMatrix);
+    position = mul(position, viewMatrix);
+    position = mul(position, modelMatrix);
+    
+    output.Pos = position;
+
     output.Color = input.Color;
+
     return output;
 }
